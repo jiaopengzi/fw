@@ -585,13 +585,25 @@ fw_start() {
     log_info "防火墙已启动"
 }
 
-# 停止防火墙(仅清除自定义规则, 不触碰 Docker 规则)
+# 停止防火墙(清除自定义规则并禁用开机自启, 不触碰 Docker 规则)
 fw_stop() {
     check_root
 
     log_info "停止防火墙..."
     delete_custom_tables
-    log_info "防火墙已停止(自定义规则已清除, Docker 规则保留)"
+
+    # 禁用 nftables 开机自启, 防止重启后自动加载规则
+    systemctl disable nftables 2>/dev/null || true
+    log_debug "已禁用 nftables 开机自启"
+
+    # 清空配置文件, 防止手动启动服务时加载旧规则
+    if [[ -f "$NFTABLES_CONF" ]]; then
+        backup_rules
+        echo '#!/usr/sbin/nft -f' > "$NFTABLES_CONF"
+        log_debug "已清空 $NFTABLES_CONF"
+    fi
+
+    log_info "防火墙已停止(自定义规则已清除, 开机自启已禁用, Docker 规则保留)"
 }
 
 # 查看防火墙状态
