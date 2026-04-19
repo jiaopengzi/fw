@@ -531,7 +531,6 @@ fw_init() {
             add_forward_billing_db_block_rules
             ;;
         mail)
-            add_web_port_rules
             add_mail_port_rules
             add_ssh_port_rules
             add_input_drop_rule
@@ -637,8 +636,11 @@ fw_status() {
 
         echo "[入站端口]"
         local _s
-        _s="已关闭"; echo "$input_rules" | grep -q "tcp dport.*80" && _s="已开放"
-        echo "  Web   ($WEB_PORTS):                $_s"
+
+        if [[ "$sys_type" != "mail" ]]; then
+            _s="已关闭"; echo "$input_rules" | grep -q "tcp dport.*80" && _s="已开放"
+            echo "  Web   ($WEB_PORTS):                $_s"
+        fi
 
         if [[ "$sys_type" == "mail" ]]; then
             _s="已关闭"; echo "$input_rules" | grep -q "tcp dport.*25" && _s="已开放"
